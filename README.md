@@ -8,6 +8,7 @@
 [![three.js](https://img.shields.io/badge/Three.js-r160-blue.svg)](https://threejs.org/)
 [![mediapipe](https://img.shields.io/badge/MediaPipe-Tasks%20Vision-orange.svg)](https://ai.google.dev/edge/mediapipe/solutions/vision)
 [![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#快速开始)
+![Uploading 运行效果预览.png…]()
 
 _双手张合，星光聚散；一张照片，一段回忆。摄像头画面全程只在本机处理，不上传、不存储。_
 
