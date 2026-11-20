@@ -203,20 +203,29 @@ const FRAG = `
     vec2 uv = gl_PointCoord - 0.5;
     float d = length(uv);
     if (d > 0.5) discard;
-    float glow = pow(smoothstep(0.5, 0.0, d), 1.7);
-    gl_FragColor = vec4(vColor, glow * clamp(vAlpha, 0.0, 1.0));
+    // 双层辉光：紧致亮核 + 柔和外晕，让粒子像真正的发光星点而非硬白点
+    float core = smoothstep(0.17, 0.0, d);              // 中心亮点
+    float halo = pow(smoothstep(0.5, 0.0, d), 1.35);    // 外围柔光
+    float glow = core * 0.85 + halo * 0.6;
+    // 亮核处微微提亮并偏白，边缘保留本色，层次更通透
+    vec3 lit = mix(vColor, vec3(1.0), core * 0.35);
+    gl_FragColor = vec4(lit, glow * clamp(vAlpha, 0.0, 1.0));
   }
 `;
 
 function treeColor(t) {
-  // 冰蓝 → 银白 → 暖粉，高级梦幻渐变
-  const cold = new THREE.Color(0x6fc6ff);
-  const white = new THREE.Color(0xf2f7ff);
-  const warm = new THREE.Color(0xffc9de);
+  // 深冰蓝 → 冰蓝 → 银白 → 暖粉 → 粉金，五段通透渐变（顶部更饱满梦幻）
+  const deep = new THREE.Color(0x3d8fd6);
+  const cold = new THREE.Color(0x8fd8ff);
+  const white = new THREE.Color(0xf6faff);
+  const warm = new THREE.Color(0xffc4e0);
+  const gold = new THREE.Color(0xffe0c0);
   const c = new THREE.Color();
-  if (t < 0.5) c.copy(cold).lerp(white, smoothstep(0, 0.5, t));
-  else c.copy(white).lerp(warm, smoothstep(0.5, 1, t));
-  c.offsetHSL(rand(-0.015, 0.015), rand(-0.04, 0.04), rand(-0.06, 0.08));
+  if (t < 0.28) c.copy(deep).lerp(cold, smoothstep(0, 0.28, t));
+  else if (t < 0.55) c.copy(cold).lerp(white, smoothstep(0.28, 0.55, t));
+  else if (t < 0.82) c.copy(white).lerp(warm, smoothstep(0.55, 0.82, t));
+  else c.copy(warm).lerp(gold, smoothstep(0.82, 1, t));
+  c.offsetHSL(rand(-0.012, 0.012), rand(-0.035, 0.035), rand(-0.05, 0.07));
   return c;
 }
 
@@ -235,7 +244,8 @@ function buildTreeParticles() {
     scatter[i * 3] = sc.x; scatter[i * 3 + 1] = sc.y; scatter[i * 3 + 2] = sc.z;
     const c = treeColor(tp.t ?? clamp((tp.y - TREE_BOTTOM) / TREE_H));
     colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-    sizes[i] = rand(0.8, 1.9);
+    // 大小分层：多数细密星点 + 少量较大亮点，制造闪烁层次
+    sizes[i] = Math.random() < 0.08 ? rand(2.2, 3.4) : rand(0.7, 1.7);
     phases[i] = rand(0, Math.PI * 2);
   }
 
@@ -268,7 +278,7 @@ function buildTreeParticles() {
 /** 底部同心光环 */
 function buildGroundRings() {
   ringGroup = new THREE.Group();
-  const radii = [3.2, 4.1, 5.2];
+  const radii = [2.6, 3.4, 4.3, 5.4];
   const glowTex = radialTexture("rgba(255,255,255,0.95)", "rgba(150,210,255,0.35)", "rgba(120,170,255,0)");
   radii.forEach((radius, ri) => {
     const count = 900 + ri * 250;
@@ -285,9 +295,10 @@ function buildGroundRings() {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    const ringColors = [0xbfe6ff, 0xffd9e8, 0x9ed4ff, 0xffc9de];
     const mat = new THREE.PointsMaterial({
-      color: ri === 1 ? 0xffd9e8 : 0xbfe6ff,
-      size: 0.14, map: glowTex, transparent: true, opacity: 0.7,
+      color: ringColors[ri % ringColors.length],
+      size: 0.16, map: glowTex, transparent: true, opacity: 0.7,
       blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
     });
     const ring = new THREE.Points(geo, mat);
@@ -321,32 +332,45 @@ function buildTopHeart() {
   heartGroup.add(heartLight);
 
   heartGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: radialTexture("rgba(255,220,235,0.9)", "rgba(255,150,195,0.35)", "rgba(255,120,180,0)"),
-    color: 0xffc0d8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.8,
+    map: radialTexture("rgba(255,225,240,0.95)", "rgba(255,150,195,0.4)", "rgba(255,120,180,0)"),
+    color: 0xffc8de, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85,
   }));
-  heartGlow.scale.set(3.2, 3.2, 1);
+  heartGlow.scale.set(3.6, 3.6, 1);
   heartGroup.add(heartGlow);
+
+  // 第二层更大更淡的外晕，营造柔和光雾
+  const heartAura = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: radialTexture("rgba(255,200,225,0.5)", "rgba(255,140,190,0.18)", "rgba(255,120,180,0)"),
+    color: 0xffd0e2, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5,
+  }));
+  heartAura.scale.set(6.2, 6.2, 1);
+  heartGroup.add(heartAura);
 
   treeRoot.add(heartGroup);
 }
 
 function buildStars() {
-  const N = 1200;
+  const N = 1600;
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  const warm = new THREE.Color(0xffd9b8), cool = new THREE.Color(0xbfe0ff), white = new THREE.Color(0xffffff);
   for (let i = 0; i < N; i++) {
     const r = rand(35, 100), th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
     pos[i * 3] = Math.sin(ph) * Math.cos(th) * r;
     pos[i * 3 + 1] = Math.cos(ph) * r;
     pos[i * 3 + 2] = Math.sin(ph) * Math.sin(th) * r;
-    const w = rand(0.5, 1);
-    col[i * 3] = w * 0.85; col[i * 3 + 1] = w * 0.92; col[i * 3 + 2] = w;
+    // 冷暖色层次：多数冷白，少量暖金与淡蓝
+    const roll = Math.random();
+    const base = roll < 0.12 ? warm : roll < 0.3 ? cool : white;
+    const w = rand(0.35, 1);
+    col[i * 3] = base.r * w; col[i * 3 + 1] = base.g * w; col[i * 3 + 2] = base.b * w;
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.setAttribute("color", new THREE.BufferAttribute(col, 3));
   scene.add(new THREE.Points(g, new THREE.PointsMaterial({
-    size: 0.55, vertexColors: true, transparent: true, opacity: 0.7,
+    size: 0.62, vertexColors: true, transparent: true, opacity: 0.78,
     sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    map: radialTexture("rgba(255,255,255,1)", "rgba(255,255,255,0.25)", "rgba(255,255,255,0)"),
   })));
 }
 

@@ -67,6 +67,8 @@ const els = {
   wishQuoteEn: $("wish-quote-en"),
   cinemaBtn: $("cinema-btn"),
   cinemaExit: $("cinema-exit"),
+  welcomeCard: $("welcome-card"),
+  welcomeClose: $("welcome-close"),
 };
 
 /* --------------------- 状态 --------------------- */
@@ -527,17 +529,19 @@ function updateGesture(results) {
     let d = pa - lastPalmAngle;
     if (d > Math.PI) d -= Math.PI * 2;
     if (d < -Math.PI) d += Math.PI * 2;
-    // 降低死区：让小幅旋转（尤其向左）也能被捕捉
-    if (Math.abs(d) > 0.005) {
+    // 角度死区：滤掉手掌静止时的微小抖动（原来 0.005 太小，静止也会让树缓慢自转）
+    if (Math.abs(d) > 0.014) {
       const dtSec = Math.max((tNow - lastPalmAngleTime) / 1000, 0.016);
       // 对称增益：两个方向用同样的放大系数，避免左小右大
       const SPIN_GAIN = 1.7;
-      const rawSpin = clamp((d / dtSec) * SPIN_GAIN, -3.2, 3.2);
+      let rawSpin = clamp((d / dtSec) * SPIN_GAIN, -3.2, 3.2);
+      // 速度级死区：极慢的角度漂移也不算"在转"，进一步稳住静止画面
+      if (Math.abs(rawSpin) < 0.28) rawSpin = 0;
       // 镜像：屏幕左右翻转，旋转方向反向符合直觉
-      smoothSpin += (-rawSpin - smoothSpin) * 0.45;
-      spinActive = true;
+      smoothSpin += (-rawSpin - smoothSpin) * 0.5;
+      spinActive = Math.abs(rawSpin) > 0;
     } else {
-      smoothSpin *= 0.9; // 停转时快速衰减
+      smoothSpin *= 0.82; // 停转时更快衰减到静止
     }
   }
   // 旋转与「食指主导」手势互斥：
@@ -1101,6 +1105,28 @@ async function loadLocalPhotos() {
   }
 }
 
+/* ---- 首次进入引导卡：让新用户一眼学会核心手势 + 找到净屏观赏入口 ---- */
+const WELCOME_SEEN_KEY = "xmas-welcome-seen-v1";
+let welcomeTimer = null;
+function showWelcomeOnce() {
+  let seen = false;
+  try { seen = localStorage.getItem(WELCOME_SEEN_KEY) === "1"; } catch (e) { /* 忽略 */ }
+  if (seen || !els.welcomeCard) return;
+  const reveal = () => {
+    els.welcomeCard.classList.add("is-visible");
+    // 14 秒后自动收起（用户仍可随时手动关）；看过一次就不再打扰
+    welcomeTimer = setTimeout(dismissWelcome, 14000);
+  };
+  setTimeout(reveal, 1400);
+}
+function dismissWelcome() {
+  if (welcomeTimer) { clearTimeout(welcomeTimer); welcomeTimer = null; }
+  if (!els.welcomeCard) return;
+  els.welcomeCard.classList.remove("is-visible");
+  try { localStorage.setItem(WELCOME_SEEN_KEY, "1"); } catch (e) { /* 忽略 */ }
+}
+if (els.welcomeClose) els.welcomeClose.addEventListener("click", dismissWelcome);
+
 function enterExperience(withCamera) {
   hideIntro();
   bootScene();
@@ -1109,6 +1135,7 @@ function enterExperience(withCamera) {
   els.cameraPanel.classList.toggle("is-visible", withCamera);
   els.cameraPanel.classList.toggle("is-collapsed", !withCamera);
   setTimeout(() => { els.intro.style.display = "none"; }, 1000);
+  showWelcomeOnce();
 }
 
 async function startCamera() {
@@ -1170,6 +1197,7 @@ $("trainer-btn").addEventListener("click", showTrainer);
 
 // 净屏观赏：顶栏按钮 + 右上角退出按钮（看得见的入口，不必记快捷键）
 function enterCinema() {
+  dismissWelcome();           // 主动进净屏即视为已了解引导，收起并记住
   setPreviewMode(true);
   showToast("净屏观赏 · 树仍随手而动，点右上「退出观赏」返回", 2400);
 }

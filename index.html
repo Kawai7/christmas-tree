@@ -294,6 +294,24 @@
   <!-- ============ Toast ============ -->
   <div class="toast" id="toast"><span class="toast__star" id="toast-star">✦</span><span id="toast-text"></span></div>
 
+  <!-- ============ 首次进入引导卡（只显示一次，可关闭） ============ -->
+  <aside class="welcome-card" id="welcome-card" aria-label="新手引导">
+    <button class="welcome-card__close" id="welcome-close" aria-label="关闭引导">×</button>
+    <div class="welcome-card__eyebrow">✦ 欢迎来到这棵树</div>
+    <h2>几秒钟，学会点亮它</h2>
+    <div class="welcome-card__grid">
+      <div class="welcome-card__item"><b>✊ 握拳</b><span>粒子聚成树</span></div>
+      <div class="welcome-card__item"><b>🖐️ 张开</b><span>散开 · 缩放</span></div>
+      <div class="welcome-card__item"><b>🔄 旋掌</b><span>转动圣诞树</span></div>
+      <div class="welcome-card__item"><b>👌 OK</b><span>心愿文案</span></div>
+    </div>
+    <div class="welcome-card__tip">
+      <span class="welcome-card__tip-icon">◉</span>
+      <div><b>想安静看树？</b>点右上角「净屏观赏」，所有提示都会隐去，只留星光、照片与心愿。再点一次或按 P 返回。</div>
+    </div>
+    <div class="welcome-card__foot">照片丢进项目根目录就会自动上树 · 摄像头画面只在本机处理</div>
+  </aside>
+
   <!-- ============ 净屏观赏：退出按钮（仅净屏态显示） ============ -->
   <button class="cinema-exit" id="cinema-exit" title="退出净屏观赏" aria-label="退出净屏观赏">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -336,6 +354,11 @@
         <li><span class="legend-dot"></span>旋掌 · 顺逆时针转动</li>
         <li><span class="legend-dot"></span>OK 手势 · 星光四散，浮现心愿</li>
       </ul>
+
+      <div class="intro__guide">
+        <span class="intro__guide-tag"> newcomers · 第一次来</span>
+        <p>进去后，右上角 <b>◉ 净屏观赏</b> 可一键收起所有提示，只留星光与照片；<b>回忆</b> 上传照片，<b>训练师</b> 可教它认得你的手势。</p>
+      </div>
 
       <div class="privacy"><span>✦</span>左侧 <b style="color:var(--gold-bright);font-weight:400">To:</b> 题字可点右上角 ✎ 修改 · 摄像头画面仅在本机处理</div>
     </div>

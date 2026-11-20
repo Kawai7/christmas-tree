@@ -2948,3 +2948,128 @@ textarea:focus {
 @media (max-width: 720px) {
   .cinema-exit { top: 12px; right: 12px; }
 }
+
+/* ============================================================
+   新手引导（2026-11-21）
+   ============================================================ */
+/* 开场页：一句话速览 */
+.intro__guide {
+  margin-top: 16px;
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--gold-dim);
+  border-radius: 4px 12px 12px 4px;
+  background: rgba(255, 224, 160, 0.035);
+  max-width: 620px;
+}
+.intro__guide-tag {
+  display: inline-block;
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.intro__guide p {
+  margin-top: 5px;
+  color: var(--ivory-soft);
+  font-family: var(--serif-zh);
+  font-size: 9.5px;
+  line-height: 1.85;
+  letter-spacing: 0.06em;
+}
+.intro__guide b { color: var(--gold-bright); font-weight: 400; }
+
+/* 进入体验后的首次引导卡 */
+.welcome-card {
+  position: absolute;
+  right: 26px;
+  bottom: 26px;
+  z-index: 26;
+  width: 316px;
+  padding: 20px 20px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  background: var(--glass-strong);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 239, 201, 0.05);
+  backdrop-filter: blur(26px) saturate(1.15);
+  -webkit-backdrop-filter: blur(26px) saturate(1.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px) scale(0.97);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out), visibility 600ms;
+}
+.is-live .welcome-card.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.welcome-card__close {
+  position: absolute;
+  top: 12px;
+  right: 13px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--ivory-faint);
+  font-size: 17px;
+  line-height: 1;
+  transition: color 200ms, background 200ms;
+}
+.welcome-card__close:hover { color: var(--gold-bright); background: rgba(255,224,160,0.08); }
+.welcome-card__eyebrow {
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.welcome-card h2 {
+  margin-top: 6px;
+  color: var(--ivory);
+  font-family: var(--serif-zh);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.welcome-card__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+.welcome-card__item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 228, 174, 0.03);
+}
+.welcome-card__item b { color: var(--gold-bright); font-size: 12px; font-weight: 500; }
+.welcome-card__item span { color: var(--ivory-faint); font-size: 10px; letter-spacing: 0.05em; }
+.welcome-card__tip {
+  display: flex;
+  gap: 10px;
+  margin-top: 13px;
+  padding: 11px 12px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  background: rgba(255, 224, 160, 0.06);
+}
+.welcome-card__tip-icon { color: var(--gold-bright); font-size: 16px; line-height: 1.2; }
+.welcome-card__tip div { color: var(--ivory-soft); font-family: var(--serif-zh); font-size: 10px; line-height: 1.75; letter-spacing: 0.04em; }
+.welcome-card__tip b { color: var(--gold-bright); font-weight: 400; }
+.welcome-card__foot {
+  margin-top: 12px;
+  color: var(--ivory-faint);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+/* 净屏观赏时隐藏引导卡 */
+#experience.is-cinema .welcome-card { display: none; }
+
+@media (max-width: 720px) {
+  .welcome-card { right: 12px; left: 12px; bottom: 108px; width: auto; }
+}

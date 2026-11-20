@@ -17,6 +17,9 @@
 /*.avif
 /*.heic
 
+# 例外：README 封面图（唯一允许提交的根目录图片）
+!/preview.png
+
 # ===== 依赖目录（本项目已把依赖本地化到 vendor/，无需 node_modules） =====
 node_modules/
 
