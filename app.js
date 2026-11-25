@@ -1030,20 +1030,39 @@ els.memoryBtn.addEventListener("click", openMemory);
 els.memoryClose.addEventListener("click", closeMemory);
 els.memoryScrim.addEventListener("click", closeMemory);
 
-/** 批量添加图片文件 */
-function addFiles(files) {
-  let n = 0;
-  for (const f of files) {
-    if (!f.type.startsWith("image/")) continue;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      addPhoto(e.target.result, f.name.replace(/\.[^.]+$/, ""));
-      n++;
-      if (n === 1) showToast("回忆已落在树上 ✦");
-    };
-    reader.readAsDataURL(f);
+/** 上传到 EdgeOne Blob：照片会被所有访问者共享 */
+async function addFiles(files) {
+  const selected = [...files].filter(f => f.type.startsWith("image/"));
+  if (!selected.length) { showToast("请选择图片文件"); return; }
+  let uploaded = 0;
+  for (const file of selected) {
+    if (file.size > 8 * 1024 * 1024) {
+      showToast(`${file.name} 超过 8MB，已跳过`, 3200);
+      continue;
+    }
+    try {
+      const ticketRes = await fetch("./api/photos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, contentType: file.type }),
+      });
+      if (!ticketRes.ok) throw new Error(await ticketRes.text());
+      const ticket = await ticketRes.json();
+      const putRes = await fetch(ticket.url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("云端存储返回 " + putRes.status);
+      const caption = file.name.replace(/\.[^.]+$/, "");
+      addPhoto(`./api/photo?key=${encodeURIComponent(ticket.key)}`, caption);
+      uploaded++;
+    } catch (err) {
+      console.error("照片上传失败", err);
+      showToast(`${file.name} 上传失败，请稍后重试`, 3500);
+    }
   }
-  if (![...files].some(f => f.type.startsWith("image/"))) showToast("请选择图片文件");
+  if (uploaded) showToast(`已保存到云端，所有人都能看到（${uploaded} 张）✦`, 3600);
 }
 
 els.dropzone.addEventListener("click", () => els.fileInput.click());
@@ -1078,30 +1097,28 @@ els.textAdd.addEventListener("click", () => {
    ============================================================ */
 function hideIntro() { els.intro.classList.add("is-leaving"); }
 
-// 自动把项目根目录里的图片挂到树上（服务器 /api/photos 扫描）。
-// 只加载一次；用 url 去重，避免和用户通过面板上传的同名图重复。
+// 从 EdgeOne Blob 读取共享相册；每位访客进入网页都会看到云端照片。
 let localPhotosLoaded = false;
 async function loadLocalPhotos() {
   if (localPhotosLoaded) return;
   localPhotosLoaded = true;
   try {
-    const res = await fetch("./api/photos");
-    if (!res.ok) return;
+    const res = await fetch("./api/photos", { cache: "no-store" });
+    if (!res.ok) throw new Error("照片列表读取失败：" + res.status);
     const data = await res.json();
     const list = Array.isArray(data.photos) ? data.photos : [];
-    if (!list.length) return;
     const existing = new Set(photos.map(p => p.src));
     let added = 0;
     for (const item of list) {
       if (!item.url || existing.has(item.url)) continue;
-      const caption = item.name || `回忆 ${String(added + 1).padStart(2, "0")}`;
-      addPhoto(item.url, caption);
+      addPhoto(item.url, item.name || `回忆 ${String(added + 1).padStart(2, "0")}`);
       existing.add(item.url);
       added++;
     }
-    if (added) setTimeout(() => showToast(`已把 ${added} 张照片挂上树 ✦`, 2600), 500);
+    if (added) setTimeout(() => showToast(`已同步大家分享的 ${added} 张照片 ✦`, 2600), 500);
   } catch (e) {
-    console.warn("本地照片加载失败", e);
+    console.warn("云端照片加载失败", e);
+    showToast("共享相册暂时无法连接，请稍后刷新", 3500);
   }
 }
 
