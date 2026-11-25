@@ -19,5 +19,8 @@
   ],
   "engines": {
     "node": ">=16"
+  },
+  "dependencies": {
+    "@edgeone/pages-blob": "^0.0.14"
   }
 }
